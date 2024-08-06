@@ -1,0 +1,64 @@
+!---------------------------------------------------------
+! Global Equates
+!---------------------------------------------------------
+SA_GMEM_MOVEABLE                   equate(0002h)
+SA_HANDLE                          equate(long)
+SA_HWND                            equate(SA_HANDLE)
+SA_HGLOBAL                         equate(SA_HANDLE)
+
+SA_CF_TEXT                         equate(1)
+SA_CF_BITMAP                       equate(2)
+SA_CF_METAFILEPICT                 equate(3)
+SA_CF_SYLK                         equate(4)
+SA_CF_DIF                          equate(5)
+SA_CF_TIFF                         equate(6)
+SA_CF_OEMTEXT                      equate(7)
+SA_CF_DIB                          equate(8)
+SA_CF_PALETTE                      equate(9)
+SA_CF_PENDATA                      equate(10)
+SA_CF_RIFF                         equate(11)
+SA_CF_WAVE                         equate(12)
+SA_CF_UNICODETEXT                  equate(13)
+SA_CF_ENHMETAFILE                  equate(14)
+
+!---------------------------------------------------------
+! Local variables
+!---------------------------------------------------------
+
+responsestr         StringTheory
+
+unicodestr          StringTheory
+unicodesize         LONG
+
+hWnd        UNSIGNED
+Result      LONG
+
+hglbCopy    UNSIGNED
+lpstrCopy   UNSIGNED
+
+!---------------------------------------------------------
+
+CopyToClipboard     ROUTINE
+    
+    unicodestr.SetValue( responsestr.GetValue())
+    unicodestr.Append('<0>')
+    unicodestr.encoding = st:EncodeUtf8
+    unicodestr.ToUnicode(st:EncodeUtf16)
+    unicodesize = unicodestr.Length()
+
+    hWnd = QuickWindow{PROP:Handle}
+    Result = SA_OpenClipboard(hWnd)
+    Result = SA_EmptyClipboard()
+
+    hglbCopy = SA_GlobalAlloc( SA_GMEM_MOVEABLE, unicodesize )
+
+    if hglbCopy = 0 then 
+        Result = SA_CloseClipboard()
+    END
+    
+    lpstrCopy = SA_GlobalLock(hglbCopy)
+    SA_memcpy( lpstrCopy, unicodestr.GetAddress(), unicodesize)
+    SA_GlobalUnlock(hglbCopy)
+    Result = SA_SetClipboardData( SA_CF_UNICODETEXT, hglbCopy)
+    Result = SA_CloseClipboard()
+
